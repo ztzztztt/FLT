@@ -39,6 +39,7 @@ def get_args():
     parser.add_argument("-wd", "--weight_decay", default=1e-5, type=float, help="the weight decay for optimizer in federated learning")
     parser.add_argument("-optim", "--optim_name", default="sgd", type=str, choices=["sgd", "adam", "amsgrad"],
                          help="the optimizer for client local epoch training in federated learning")
+    parser.add_argument("-mu", "--mu", default=0.01, type=float, help="the mu for fedprox in federated learning")
     parser.add_argument("-n", "--n_parties", default=10, type=int, help="total client numbers in federated learning")
     parser.add_argument("-nk", "--nk_parties", default=10, type=int, help="client numbers for aggregation per communication round in federated learning")
 
@@ -188,7 +189,7 @@ def restruce_data_from_dataidx(datadir: str, dataset: str, dataidx_map: dict):
 
 def init_algorithms(
     algorithm: str, global_net, nets: dict, train_datasets: dict, test_dataset, 
-    nk_parties, E, comm_round, lr, batch_size, weight_decay, optim_name, device, savedir):
+    nk_parties, E, comm_round, lr, batch_size, weight_decay, optim_name, device, savedir, *args, **kwargs):
     logging.info(f"Load {algorithm.upper()} for training")
     if algorithm == "fedavg":
         trainer = FedAvg(
@@ -201,7 +202,7 @@ def init_algorithms(
         trainer = FedProx(
             global_net=global_net, nets=nets, datasets=train_datasets, test_dataset=test_dataset,
             nk_parties=nk_parties, E=E, comm_round=comm_round,
-            lr=lr, batch_size=batch_size, weight_decay=weight_decay, optim_name=optim_name,
+            lr=lr, batch_size=batch_size, weight_decay=weight_decay, optim_name=optim_name, mu=kwargs.get("mu"),
             device=device, savedir=savedir
         )
     else:
@@ -230,9 +231,11 @@ def train(network: str, datadir: str, dataset: str, algorithm: str, partition: s
         return
     device = "cuda" if torch.cuda.is_available() else "cpu"
     trainer = init_algorithms(
-        algorithm, global_net, nets, train_datasets, test_dataset, 
-        args.nk_parties, args.epochs, args.rounds, 
-        args.learning_rate, args.batch_size, args.weight_decay, args.optim_name, device=device, savedir=savedir
+        algorithm, global_net, nets, train_datasets, test_dataset, args.nk_parties, 
+        args.epochs, args.rounds, args.learning_rate, args.batch_size, args.weight_decay,
+        args.optim_name, device=device, savedir=savedir,
+        # kwargs 参数
+        mu=args.mu
     )
     if trainer is not None:
         trainer.start()

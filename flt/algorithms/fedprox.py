@@ -32,6 +32,7 @@ class FedProx(object):
         batch_size: int,
         weight_decay: float,
         optim_name: str,
+        mu: float,
         device: str,
         savedir: str,
         *args, **kwargs
@@ -48,6 +49,7 @@ class FedProx(object):
         self._bs = batch_size
         self._weight_decay = weight_decay
         self._optim_name = optim_name
+        self._mu = mu
 
         self._device = torch.device(f"cuda") if device == "cuda" else torch.device("cpu")
 
@@ -167,7 +169,7 @@ class FedProx(object):
                 net = self._train(
                     net, dataset=self._datasets[key], test_dataset=self._test_dataset, 
                     optimizer=optimizer, bs=self._bs, E=self._E, 
-                    global_net=self._global_net, mu=0.1, device=self._device
+                    global_net=self._global_net, mu=self._mu, device=self._device
                 )
                 net_w_lst.append(net.state_dict())
                 ratios.append(len(self._datasets[key]))
