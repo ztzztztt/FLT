@@ -10,3 +10,4 @@
 @Desc    : 
 """
 from .fedavg import FedAvg
+from .fedprox import FedProx

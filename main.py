@@ -14,10 +14,10 @@ import torch
 import pickle
 import logging
 import datetime
+from flt import network
 from torchvision import transforms
 from argparse import ArgumentParser
-from flt import network
-from flt.algorithms import FedAvg
+from flt.algorithms import FedAvg, FedProx
 from flt.utils.partitioner import IIDPartitioner, DirichletPartitioner
 from flt.dataset import Cifar10Wrapper, Cifar100Wrapper, ImageFolderWrapper
 
@@ -44,7 +44,7 @@ def get_args():
 
     parser.add_argument("--epochs", default=3, type=int, help="the federated learning client local epoch for training")
     parser.add_argument("--rounds", default=50, type=int, help="the federated learning communication rounds")
-    parser.add_argument("--alg", default="fedavg", type=str, choices=["fedavg", "fedprox"], help="the federated learning algorithm")
+    parser.add_argument("--alg", default="fedprox", type=str, choices=["fedavg", "fedprox"], help="the federated learning algorithm")
 
     parser.add_argument("--savedir", default="exps", type=str, help="the federated learning algorithm experiment save dir")
     return parser.parse_args()
@@ -189,7 +189,7 @@ def restruce_data_from_dataidx(datadir: str, dataset: str, dataidx_map: dict):
 def init_algorithms(
     algorithm: str, global_net, nets: dict, train_datasets: dict, test_dataset, 
     nk_parties, E, comm_round, lr, batch_size, weight_decay, optim_name, device, savedir):
-    logging.info(f"Load {algorithm} for training")
+    logging.info(f"Load {algorithm.upper()} for training")
     if algorithm == "fedavg":
         trainer = FedAvg(
             global_net=global_net, nets=nets, datasets=train_datasets, test_dataset=test_dataset,
@@ -198,7 +198,12 @@ def init_algorithms(
             device=device, savedir=savedir
         )
     elif algorithm == "fedprox":
-        trainer = None
+        trainer = FedProx(
+            global_net=global_net, nets=nets, datasets=train_datasets, test_dataset=test_dataset,
+            nk_parties=nk_parties, E=E, comm_round=comm_round,
+            lr=lr, batch_size=batch_size, weight_decay=weight_decay, optim_name=optim_name,
+            device=device, savedir=savedir
+        )
     else:
         trainer = None
     return trainer
