@@ -145,7 +145,7 @@ class FedAvg(object):
             for idx, (key, net) in enumerate(samples.items()):
                 logging.info(f"  >>> [Local Train] client: {key} / [{idx + 1}/{len(samples)}]")
                 net.load_state_dict(global_w)
-                optimizer = self._optimizer(self._optim_name, net, lr=self._lr, weight_decay=1e-5)
+                optimizer = self._optimizer(self._optim_name, net, lr=self._lr, weight_decay=self._weight_decay)
                 net = self._train(
                     net, dataset=self._datasets[key], test_dataset=self._test_dataset, 
                     optimizer=optimizer, bs=self._bs, E=self._E, device=self._device

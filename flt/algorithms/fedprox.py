@@ -162,10 +162,13 @@ class FedProx(object):
             # 选择部分或者全部节点进行训练
             samples = self._sample_nets(self._nets, self._nk_parties)
             net_w_lst, ratios = [], []
+            # 遍历所有的采样节点进行训练
             for idx, (key, net) in enumerate(samples.items()):
                 logging.info(f"  >>> [Local Train] client: {key} / [{idx + 1}/{len(samples)}]")
+                # 给每个节点加载上一轮的全局模型
                 net.load_state_dict(global_w)
-                optimizer = self._optimizer(self._optim_name, net, lr=self._lr, weight_decay=1e-5)
+                # 生成优化器
+                optimizer = self._optimizer(self._optim_name, net, lr=self._lr, weight_decay=self._weight_decay)
                 net = self._train(
                     net, dataset=self._datasets[key], test_dataset=self._test_dataset, 
                     optimizer=optimizer, bs=self._bs, E=self._E, 
