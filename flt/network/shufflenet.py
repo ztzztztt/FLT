@@ -120,13 +120,14 @@ class ShuffleNet(nn.Module):
             nn.BatchNorm2d(24),
             nn.ReLU(inplace=True)
         )
-
-        self.fc = nn.Linear(c4, output_size)
-
         # build stages
         self.stage2 = self.build_stage(24, c2, repeat_time = 3, first_group = False, downsample = False)
         self.stage3 = self.build_stage(c2, c3, repeat_time = 7)
         self.stage4 = self.build_stage(c3, c4, repeat_time = 3)
+        
+        self.adaptive_pool = torch.nn.AdaptiveAvgPool2d((1, 1))
+
+        self.fc = nn.Linear(c4, output_size)
 
         # weights init
         self.weights_init()
@@ -168,7 +169,8 @@ class ShuffleNet(nn.Module):
         # print(x.shape)
 
         # global pooling and fc (in place of conv 1x1 in paper)
-        x = F.adaptive_avg_pool2d(x, 1)
+        # x = F.adaptive_avg_pool2d(x, 1)
+        x = self.adaptive_pool(x, 1)
         x = x.view(x.shape[0], -1)
         x = self.fc(x)
 

@@ -53,7 +53,7 @@ class SimpleCNN(nn.Module):
             ConvBN(256, 512, 3, 1, 1),
             nn.MaxPool2d(kernel_size=(2, 2), stride=(2, 2)),
         )
-        self.classifier = nn.Sequential(
+        self.fc = nn.Sequential(
             nn.Linear(512, 512),
             nn.ReLU(inplace=True),
             nn.Linear(512, out_num)
@@ -67,7 +67,7 @@ class SimpleCNN(nn.Module):
         x = self.block_5(x)
         x = self.block_6(x)
         x = torch.flatten(x, start_dim=1)
-        x = self.classifier(x)
+        x = self.fc(x)
         return x
 
 
