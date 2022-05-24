@@ -37,6 +37,23 @@ class FedProx(object):
         savedir: str,
         *args, **kwargs
     ) -> None:
+        """
+        FedProx 算法
+        :param nn.Module global_net: 全局模型
+        :param dict nets: 所有的局部模型
+        :param dict datasets: 拆分的所有的数据集
+        :param data.Dataset test_dataset: 测试数据集
+        :param int nk_parties: 每轮选取多少个节点融合
+        :param int E: 本地的epoch
+        :param int comm_round: 通信的轮数
+        :param float lr: 优化器学习率
+        :param int batch_size: 优化器的batch大小
+        :param float weight_decay: 优化器权重衰减系数
+        :param str optim_name: 优化器的名称
+        :param float mu: FedProx 约束参数
+        :param str device: 训练设备， GPU或者CPU
+        :param str savedir: 模型保存路径
+        """
         self._global_net = global_net
         self._nets = nets
         self._datasets = datasets
