@@ -86,23 +86,15 @@ class MOON(object):
         self._kwargs = kwargs
 
         # 设置全局模型不可训练
-        for param in self._global_net.parameters():
-                param.requires_grad = False
+        self._global_net = self._require_grad_f(self._global_net)
+        self._prev_nets = {}
+        for key, net in self._nets.items():
+            self._prev_nets[key] = [self._require_grad_f(copy.deepcopy(net))]
 
     def start(self):
         old_net_pool = []
         global_w = self._global_net.state_dict()
         for round in range(self._comm_round):
-            # 旧模型列表没有超出设定的上限
-            old_net = copy.deepcopy(self._global_net)
-            if len(old_net_pool) < self._pool_size:
-                old_net_pool.append(old_net)
-            else:
-                for i in range(0, len(old_net_pool)-1):
-                    old_net_pool[i] = old_net_pool[i+1]
-                del old_net_pool[len(old_net_pool)-1]
-                old_net_pool.append(old_net)
-
             logging.info(f"[Round] {round + 1} / {self._comm_round} start")
             # 选择部分或者全部节点进行训练
             samples = self._sample_nets(self._nets, self._nk_parties)
@@ -114,11 +106,22 @@ class MOON(object):
                 net = self._train(
                     net, dataset=self._datasets[key], test_dataset=self._test_dataset, 
                     optimizer=optimizer, bs=self._bs, E=self._E, 
-                    old_nets=old_net_pool, mu=self._mu, temperature=self._temperature,
+                    old_nets=self._prev_nets[key], mu=self._mu, temperature=self._temperature,
                     device=self._device
                 )
                 net_w_lst.append(net.state_dict())
                 ratios.append(len(self._datasets[key]))
+                # 保存所有的旧模型
+                old_nets = self._prev_nets[key]
+                if len(old_nets) < self._pool_size:
+                    old_nets.append(self._require_grad_f(copy.deepcopy(net)))
+                    self._prev_nets[key] = old_nets
+                else:
+                    for _ in range(len(old_nets) + 1 - self._pool_size):
+                        del old_nets[0]
+                    old_nets.append(self._require_grad_f(copy.deepcopy(net)))
+                    self._prev_nets[key] = old_nets
+
             # 模型聚合
             global_w = self._aggregate(net_w_lst, ratios)
             self._global_net.load_state_dict(global_w)
@@ -244,3 +247,9 @@ class MOON(object):
                 samples[idx] = nets[idx]
             samples = dict(sorted(samples.items(), key=operator.itemgetter(0)))
             return samples
+
+    def _require_grad_f(self, net):
+        # 设置全局模型不可训练
+        for param in net.parameters():
+            param.requires_grad = False
+        return net
