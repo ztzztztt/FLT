@@ -92,7 +92,6 @@ class MOON(object):
             self._prev_nets[key] = [self._require_grad_f(copy.deepcopy(net))]
 
     def start(self):
-        old_net_pool = []
         global_w = self._global_net.state_dict()
         for round in range(self._comm_round):
             logging.info(f"[Round] {round + 1} / {self._comm_round} start")
