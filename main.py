@@ -211,7 +211,7 @@ def init_algorithms(
             global_net=global_net, nets=nets, datasets=train_datasets, test_dataset=test_dataset,
             nk_parties=nk_parties, E=E, comm_round=comm_round,
             lr=lr, batch_size=batch_size, weight_decay=weight_decay, optim_name=optim_name,
-            mu=kwargs.get("mu", 0.1), 
+            mu=kwargs.get("mu", 1), 
             temperature=kwargs.get("temperature", 0.5), 
             pool_size=kwargs.get("pool_size", 1), 
             device=device, savedir=savedir

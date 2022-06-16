@@ -101,11 +101,13 @@ class MOON(object):
             for idx, (key, net) in enumerate(samples.items()):
                 logging.info(f"  >>> [Local Train] client: {key} / [{idx + 1}/{len(samples)}]")
                 net.load_state_dict(global_w)
+                # 选取先前的模型
+                prev_nets_pool = self._prev_nets[key] if round != 0 else []
                 optimizer = self._optimizer(self._optim_name, net, lr=self._lr, weight_decay=self._weight_decay)
                 net = self._train(
                     net, dataset=self._datasets[key], test_dataset=self._test_dataset, 
                     optimizer=optimizer, bs=self._bs, E=self._E, 
-                    old_nets=self._prev_nets[key], mu=self._mu, temperature=self._temperature,
+                    old_nets=prev_nets_pool, mu=self._mu, temperature=self._temperature,
                     device=self._device
                 )
                 net_w_lst.append(net.state_dict())
@@ -159,6 +161,7 @@ class MOON(object):
                 positive = cosime(prob, global_prob)
                 logits = positive.reshape(-1, 1)
 
+                loss2 = 0
                 # 计算每一个旧模型的输出
                 for old_net in old_nets:
                     old_net = old_net.to(device)
