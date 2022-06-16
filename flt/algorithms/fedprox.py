@@ -96,7 +96,8 @@ class FedProx(object):
 
                 fed_prox_reg = torch.tensor(0.0).to(device)
                 for key, param in enumerate(net.parameters()):
-                    fed_prox_reg += ((mu / 2) * torch.norm((param - global_w[key])) ** 2)
+                    fed_prox_reg += (param - global_w[key]).norm(2)
+                fed_prox_reg = (mu / 2) * fed_prox_reg
                 total_loss = loss + fed_prox_reg
 
                 total_loss.backward()
