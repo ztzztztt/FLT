@@ -203,7 +203,7 @@ def init_algorithms(
         trainer = FedProx(
             global_net=global_net, nets=nets, datasets=train_datasets, test_dataset=test_dataset,
             nk_parties=nk_parties, E=E, comm_round=comm_round,
-            lr=lr, batch_size=batch_size, weight_decay=weight_decay, optim_name=optim_name, mu=kwargs.get("mu"), # type: ignore
+            lr=lr, batch_size=batch_size, weight_decay=weight_decay, optim_name=optim_name, mu=kwargs.get("mu", 0.01),
             device=device, savedir=savedir
         )
     elif algorithm == "moon":
