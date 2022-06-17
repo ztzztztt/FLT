@@ -99,7 +99,7 @@ class DirichletPartitioner(Partitioner):
         :param int count: 当前样本总数
         :return list[int] : 返回的每个类别
         """
-        counts_lst =  prob * count
+        counts_lst = (prob * count).tolist()
         counts_lst = [int(Decimal(count).quantize(Decimal("1."), rounding = "ROUND_HALF_UP")) for count in counts_lst]
         # 处理后的所有节点样本数量和超过所有的样本数量
         lst_count = sum(counts_lst)

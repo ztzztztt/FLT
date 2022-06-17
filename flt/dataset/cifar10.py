@@ -34,6 +34,10 @@ class Cifar10Wrapper(data.Dataset):
         self._transform = transform
         self._target_transform = target_transform
         self._datas, self._targets = self._build_datasets()
+    
+    @property
+    def cls_num_map(self):
+        return {key: np.sum(key == self._targets) for key in np.unique(self._targets)}
 
     def _build_datasets(self):
         cifar10_dataset = CIFAR10(
