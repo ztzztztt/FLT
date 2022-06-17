@@ -86,10 +86,10 @@ class MOON(object):
         self._kwargs = kwargs
 
         # 设置全局模型不可训练
-        self._global_net = self._require_grad_f(self._global_net)
+        self._global_net = self._require_grad_false(self._global_net)
         self._prev_nets = {}
         for key, net in self._nets.items():
-            self._prev_nets[key] = [self._require_grad_f(copy.deepcopy(net))]
+            self._prev_nets[key] = [self._require_grad_false(copy.deepcopy(net))]
 
     def start(self):
         global_w = self._global_net.state_dict()
@@ -101,9 +101,14 @@ class MOON(object):
             for idx, (key, net) in enumerate(samples.items()):
                 logging.info(f"  >>> [Local Train] client: {key} / [{idx + 1}/{len(samples)}]")
                 net.load_state_dict(global_w)
+
+                optimizer = self._optimizer(self._optim_name, net, lr=self._lr, weight_decay=self._weight_decay)
+
                 # 选取先前的模型
                 prev_nets_pool = self._prev_nets[key] if round != 0 else []
-                optimizer = self._optimizer(self._optim_name, net, lr=self._lr, weight_decay=self._weight_decay)
+                # 调用测试全局模型
+                self._global_net = self._require_grad_false(self._global_net)
+
                 net = self._train(
                     net, dataset=self._datasets[key], test_dataset=self._test_dataset, 
                     optimizer=optimizer, bs=self._bs, E=self._E, 
@@ -115,12 +120,12 @@ class MOON(object):
                 # 保存所有的旧模型
                 old_nets = self._prev_nets[key]
                 if len(old_nets) < self._pool_size:
-                    old_nets.append(self._require_grad_f(copy.deepcopy(net)))
+                    old_nets.append(self._require_grad_false(copy.deepcopy(net)))
                     self._prev_nets[key] = old_nets
                 else:
                     for _ in range(len(old_nets) + 1 - self._pool_size):
                         del old_nets[0]
-                    old_nets.append(self._require_grad_f(copy.deepcopy(net)))
+                    old_nets.append(self._require_grad_false(copy.deepcopy(net)))
                     self._prev_nets[key] = old_nets
 
             # 模型聚合
@@ -156,9 +161,7 @@ class MOON(object):
                 # 计算全局模型的输出
                 self._global_net.to(device)
                 _, global_prob, _ = self._global_net(x)
-                # print(f"Local Prob: {prob.cpu().detach().numpy()}")
-                # print(f"Global Prob: {global_prob.cpu().detach().numpy()}")
-                # self._global_net.to("cpu")
+                self._global_net.to("cpu")
 
                 positive = cosime(prob, global_prob)
                 logits = positive.reshape(-1, 1)
@@ -170,7 +173,7 @@ class MOON(object):
                     _, old_prob, _ = old_net(x)
                     negative = cosime(prob, old_prob)
                     logits = torch.cat([logits, negative.reshape(-1, 1)], dim=1)
-                    # old_net.to("cpu")
+                    old_net.to("cpu")
                 
                 logits /= temperature
                 labels = torch.zeros(x.size(0)).cuda().long()
@@ -252,7 +255,8 @@ class MOON(object):
             samples = dict(sorted(samples.items(), key=operator.itemgetter(0)))
             return samples
 
-    def _require_grad_f(self, net):
+    def _require_grad_false(self, net):
+        net.eval()
         # 设置全局模型不可训练
         for param in net.parameters():
             param.requires_grad = False
