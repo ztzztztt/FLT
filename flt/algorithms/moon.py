@@ -156,6 +156,8 @@ class MOON(object):
                 # 计算全局模型的输出
                 self._global_net.to(device)
                 _, global_prob, _ = self._global_net(x)
+                # print(f"Local Prob: {prob.cpu().detach().numpy()}")
+                # print(f"Global Prob: {global_prob.cpu().detach().numpy()}")
                 # self._global_net.to("cpu")
 
                 positive = cosime(prob, global_prob)

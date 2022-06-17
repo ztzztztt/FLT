@@ -29,6 +29,10 @@ class ImageFolderWrapper(DatasetFolder):
         self._transform = transform
         self._target_transform = target_transform
         self._samples, self._loader = self._build_datasets()
+    
+    @property
+    def cls_num_map(self):
+        return {key: np.sum(key == self._targets) for key in np.unique(self._targets)}
 
     def _build_datasets(self):
         img_folder_dataset = ImageFolder(

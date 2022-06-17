@@ -33,7 +33,7 @@ def get_args():
                          help="the dataset for training Federated Learning")
     parser.add_argument("--alpha", default=0.5, type=float, help="the dirichlet ratio for dataset split to train Federated Learning")
     parser.add_argument("--datadir", default="./data/cifar10", type=str, help="the dataset dir")
-    parser.add_argument('--partition', default="IID", type=str, choices=["iid", "non-iid"], help="the data partitioning strategy")
+    parser.add_argument('--partition', default="iid", type=str, choices=["iid", "non-iid"], help="the data partitioning strategy")
 
     parser.add_argument("-lr", "--learning_rate", default=0.1, type=float, help="the optimizer learning rate")
     parser.add_argument("-bs", "--batch_size", default=16, type=int, help="the batch size for client local epoch training in federated learning")
@@ -137,6 +137,8 @@ def init_datasets(datadir: str, dataset: str, partition: str, n_parties: int, al
     dataidx_map_count = {k: len(v) for k, v in dataidx_map.items()}
     logging.info(f"dataidx for training {dataidx_map_count}")
     train_datasets, test_dataset = restruce_data_from_dataidx(datadir=datadir, dataset=dataset, dataidx_map=dataidx_map)
+    cls_num_maps = {k: d.cls_num_map for (k, d) in train_datasets.items()}
+    logging.info(cls_num_maps)
     return train_datasets, test_dataset
 
 
