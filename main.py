@@ -31,16 +31,16 @@ def get_args():
 
     parser.add_argument("-d", "--dataset", default="cifar10", type=str, choices=["cifar10", "cifar100", "mnist"],
                          help="the dataset for training Federated Learning")
-    parser.add_argument("--alpha", default=0.5, type=float, help="the dirichlet ratio for dataset split to train Federated Learning")
+    parser.add_argument("--alpha", default=0.05, type=float, help="the dirichlet ratio for dataset split to train Federated Learning")
     parser.add_argument("--datadir", default="./data/cifar10", type=str, help="the dataset dir")
-    parser.add_argument('--partition', default="iid", type=str, choices=["iid", "non-iid"], help="the data partitioning strategy")
+    parser.add_argument('--partition', default="non-iid", type=str, choices=["iid", "non-iid"], help="the data partitioning strategy")
 
     parser.add_argument("-lr", "--learning_rate", default=0.1, type=float, help="the optimizer learning rate")
     parser.add_argument("-bs", "--batch_size", default=16, type=int, help="the batch size for client local epoch training in federated learning")
     parser.add_argument("-wd", "--weight_decay", default=1e-5, type=float, help="the weight decay for optimizer in federated learning")
     parser.add_argument("-optim", "--optim_name", default="sgd", type=str, choices=["sgd", "adam", "amsgrad"],
                          help="the optimizer for client local epoch training in federated learning")
-    parser.add_argument("-mu", "--mu", default=0.01, type=float, help="the mu for fedprox in federated learning")
+    parser.add_argument("-mu", "--mu", default=1.0, type=float, help="the mu for fedprox in federated learning")
     parser.add_argument("-n", "--n_parties", default=10, type=int, help="total client numbers in federated learning")
     parser.add_argument("-nk", "--nk_parties", default=10, type=int, help="client numbers for aggregation per communication round in federated learning")
 
@@ -230,6 +230,8 @@ def train(network: str, datadir: str, dataset: str, algorithm: str, partition: s
         n_classes = 100
     else:
         n_classes = 10
+    # 如果是MOON算法，则由于输出多个值，需要加载不同的模型
+    network = f"{algorithm}_{network}" if algorithm == "moon" else network
     # 获取模型
     logging.info(f"Load network: {network}")
     global_nets = init_nets(network, 1, {"num_classes": n_classes})

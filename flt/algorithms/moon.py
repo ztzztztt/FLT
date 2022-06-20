@@ -17,7 +17,7 @@ import operator
 import numpy as np
 from torch import nn, optim
 from torch.utils import data
-from flt.utils.net_wrapper import wrapper_net
+# from flt.utils.net_wrapper import wrapper_net
 
 
 class MOON(object):
@@ -60,8 +60,10 @@ class MOON(object):
         :param str temperature: 对比损失计算权重
         :param str pool_size: 采用多大的旧模型池
         """
-        self._global_net = wrapper_net(global_net)
-        self._nets = {k: wrapper_net(net) for k, net in nets.items()}
+        # self._global_net = wrapper_net(global_net)
+        self._global_net = global_net
+        # self._nets = {k: wrapper_net(net) for k, net in nets.items()}
+        self._nets = {k: net for k, net in nets.items()}
         self._datasets = datasets
         self._test_dataset = test_dataset
         self._nk_parties = nk_parties
@@ -92,8 +94,9 @@ class MOON(object):
             self._prev_nets[key] = [self._require_grad_false(copy.deepcopy(net))]
 
     def start(self):
-        global_w = self._global_net.state_dict()
+        # 遍历所有的通信轮数，训练模型，融合模型
         for round in range(self._comm_round):
+            global_w = self._global_net.state_dict()
             logging.info(f"[Round] {round + 1} / {self._comm_round} start")
             # 选择部分或者全部节点进行训练
             samples = self._sample_nets(self._nets, self._nk_parties)
@@ -115,6 +118,7 @@ class MOON(object):
                     old_nets=prev_nets_pool, mu=self._mu, temperature=self._temperature,
                     device=self._device
                 )
+                # net_w_lst.append(copy.deepcopy(net.state_dict()))
                 net_w_lst.append(net.state_dict())
                 ratios.append(len(self._datasets[key]))
                 # 保存所有的旧模型
@@ -133,7 +137,7 @@ class MOON(object):
             self._global_net.load_state_dict(global_w)
             acc = self._valid(self._global_net, self._test_dataset, self._bs, self._device)
             # 保存模型
-            logging.info(f"[Gloabl] Round: {round + 1}, Acc: {acc}")
+            logging.info(f"[Gloabl] Round: {round + 1}, Acc: {acc:.6f}")
             if not os.path.exists(f"{self._savedir}/models/"):
                 os.makedirs(f"{self._savedir}/models/")
             torch.save(
@@ -146,7 +150,7 @@ class MOON(object):
 
         net = net.to(device)
         criterion = nn.CrossEntropyLoss().to(device)
-        cosime = torch.nn.CosineSimilarity(dim=-1)
+        cosine = torch.nn.CosineSimilarity(dim=-1)
         for epoch in range(E):
             epoch_loss_lst = []
             epoch_loss1_lst = []
@@ -161,19 +165,18 @@ class MOON(object):
                 # 计算全局模型的输出
                 self._global_net.to(device)
                 _, global_prob, _ = self._global_net(x)
-                self._global_net.to("cpu")
+                # self._global_net.to("cpu")
 
-                positive = cosime(prob, global_prob)
+                positive = cosine(prob, global_prob)
                 logits = positive.reshape(-1, 1)
 
-                loss2 = 0
                 # 计算每一个旧模型的输出
                 for old_net in old_nets:
                     old_net = old_net.to(device)
                     _, old_prob, _ = old_net(x)
-                    negative = cosime(prob, old_prob)
+                    negative = cosine(prob, old_prob)
                     logits = torch.cat([logits, negative.reshape(-1, 1)], dim=1)
-                    old_net.to("cpu")
+                    # old_net.to("cpu")
                 
                 logits /= temperature
                 labels = torch.zeros(x.size(0)).cuda().long()
@@ -186,7 +189,9 @@ class MOON(object):
                 epoch_loss1_lst.append(loss1.item())
                 epoch_loss2_lst.append(loss2.item())
                 epoch_loss_lst.append(loss.item())
-            
+            epoch_loss1_lst = [0] if len(epoch_loss1_lst) == 0 else epoch_loss1_lst
+            epoch_loss2_lst = [0] if len(epoch_loss2_lst) == 0 else epoch_loss2_lst
+            epoch_loss_lst = [0] if len(epoch_loss_lst) == 0 else epoch_loss_lst
             logging.info(
                 f"    >>> [Local Train] Epoch: {epoch + 1}, "
                 f"Optim Loss: {(sum(epoch_loss1_lst) / len(epoch_loss1_lst)):.6f}, "
@@ -208,7 +213,7 @@ class MOON(object):
 
     def _aggregate(self, net_w_lst: list, ratios: list):
         sample_num = sum(ratios)
-        global_w = net_w_lst[0]
+        global_w = copy.deepcopy(net_w_lst[0])
         for key in global_w.keys():
             if "num_batches_tracked" not in key:
                 global_w[key] *= (ratios[0] / sample_num)
