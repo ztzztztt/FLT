@@ -187,9 +187,11 @@ class SimpleCNN_for_MOON(nn.Module):
             ConvBN(256, 512, 3, 1, 1),
             nn.MaxPool2d(kernel_size=(2, 2), stride=(2, 2)),
         )
-        self.l1 = nn.Linear(512, 512)
-
-        self.l2 = nn.Linear(512, out_num)
+        self.fc = nn.Sequential(
+            nn.Linear(512, 512),
+            nn.ReLU(inplace=True),
+            nn.Linear(512, out_num)
+        )
 
     def forward(self, x):
         h = self.block_1(x)
@@ -199,10 +201,61 @@ class SimpleCNN_for_MOON(nn.Module):
         h = self.block_5(h)
         h = self.block_6(h)
         h = h.squeeze()
-        x = self.l1(h)
-        y = self.l2(x)
-        return h, x, y
+        y = self.fc(h)
+        return h, h, y
 
 
 def moon_SimpleCNN(num_classes: int = 10):
     return SimpleCNN_for_MOON(out_num=num_classes)
+
+
+class ModelFedCon(nn.Module):
+    def __init__(self, model_name: str, num_classes: int):
+        super().__init__()
+        if model_name == "resnet9":
+            basemodel = moon_resnet9(num_classes=num_classes)
+            self.features = nn.Sequential(*list(basemodel.children())[:-1])
+            num_ftrs = 512
+        elif model_name == "resnet18":
+            basemodel = moon_resnet18(num_classes=num_classes)
+            self.features = nn.Sequential(*list(basemodel.children())[:-1])
+            num_ftrs = 512
+        elif model_name == "resnet34":
+            basemodel = moon_resnet34(num_classes=num_classes)
+            self.features = nn.Sequential(*list(basemodel.children())[:-1])
+            num_ftrs = 512
+        elif model_name == "resnet50":
+            basemodel = moon_resnet50(num_classes=num_classes)
+            self.features = nn.Sequential(*list(basemodel.children())[:-1])
+            num_ftrs = 512
+        elif model_name == "resnet101":
+            basemodel = moon_resnet101(num_classes=num_classes)
+            self.features = nn.Sequential(*list(basemodel.children())[:-1])
+            num_ftrs = 512
+        elif model_name == "resnet152":
+            basemodel = moon_resnet152(num_classes=num_classes)
+            self.features = nn.Sequential(*list(basemodel.children())[:-1])
+            num_ftrs = 512
+        elif model_name == "shufflenet":
+            basemodel = moon_shufflenet(num_classes=num_classes)
+            self.features = nn.Sequential(*list(basemodel.children())[:-1])
+            num_ftrs = 512
+        elif model_name == "SimpleCNN":
+            basemodel = moon_shufflenet(num_classes=num_classes)
+            self.features = nn.Sequential(*list(basemodel.children())[:-1])
+            num_ftrs = 84
+        else:
+            basemodel = moon_shufflenet(num_classes=num_classes)
+            self.features = nn.Sequential(*list(basemodel.children())[:-1])
+            num_ftrs = 84
+
+        self.l1 = nn.Linear(num_ftrs, num_ftrs)
+
+        self.l2 = nn.Linear(num_ftrs, num_classes)
+
+    def forward(self, x):
+        h = self.features(x)
+        h = h.squeeze()
+        x = self.l1(h)
+        y = self.l2(x)
+        return h, x, y

@@ -231,15 +231,19 @@ def train(network: str, datadir: str, dataset: str, algorithm: str, partition: s
     else:
         n_classes = 10
     # 如果是MOON算法，则由于输出多个值，需要加载不同的模型
-    network = f"{algorithm}_{network}" if algorithm == "moon" else network
+    if algorithm == "moon":
+        net_config = {"model_name": f"{network}", "num_classes": n_classes}
+        network = "ModelFedCon"
+    else:
+        net_config = {"num_classes": n_classes}
     # 获取模型
     logging.info(f"Load network: {network}")
-    global_nets = init_nets(network, 1, {"num_classes": n_classes})
+    global_nets = init_nets(network, 1, net_config)
     if global_nets is None or global_nets.get(0) is None:
         logging.info("Error, initialize global model failed")
         return 
     global_net = global_nets[0]
-    nets = init_nets(network, n_parties, {"num_classes": n_classes})
+    nets = init_nets(network, n_parties, net_config)
     # 获取训练数据集与测试数据集
     train_datasets, test_dataset = init_datasets(datadir, dataset, partition=partition, n_parties=n_parties, alpha=alpha)
     if nets is None or train_datasets is None or test_dataset is None:
