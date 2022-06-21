@@ -25,7 +25,7 @@ from flt.dataset import Cifar10Wrapper, Cifar100Wrapper, ImageFolderWrapper
 
 def get_args():
     parser = ArgumentParser()
-    parser.add_argument("-b", "--backbone", default="resnet9", type=str, choices=["SimpleCNN", "resnet34", "shufflenet"], 
+    parser.add_argument("-b", "--backbone", default="SimpleCNN", type=str, choices=["SimpleCNN", "resnet34", "shufflenet"], 
                          help="the network/model for experiment")
     parser.add_argument("--net_config", default={}, type=lambda x: list(map(int, x.split(', '))), help="the federated learning network config")
 
@@ -35,7 +35,7 @@ def get_args():
     parser.add_argument("--datadir", default="./data/cifar10", type=str, help="the dataset dir")
     parser.add_argument('--partition', default="non-iid", type=str, choices=["iid", "non-iid"], help="the data partitioning strategy")
 
-    parser.add_argument("-lr", "--learning_rate", default=0.1, type=float, help="the optimizer learning rate")
+    parser.add_argument("-lr", "--learning_rate", default=0.001, type=float, help="the optimizer learning rate")
     parser.add_argument("-bs", "--batch_size", default=16, type=int, help="the batch size for client local epoch training in federated learning")
     parser.add_argument("-wd", "--weight_decay", default=1e-5, type=float, help="the weight decay for optimizer in federated learning")
     parser.add_argument("-optim", "--optim_name", default="sgd", type=str, choices=["sgd", "adam", "amsgrad"],

@@ -65,7 +65,7 @@ class ResNet_for_MOON(nn.Module):
         out = self.conv4_x(out)
         out = self.conv5_x(out)
         out = self.avg_pool(out)
-        out = out.view(out.size(0), -1)
+        out = out.squeeze()
         y = self.fc(out)
         return out, out, y
 
@@ -146,7 +146,7 @@ class ShuffleNet_for_MOON(nn.Module):
         h = self.stage4(h)
 
         h = self.adaptive_pool(h, 1)
-        h = h.view(h.shape[0], -1)
+        h = h.squeze()
         y = self.fc(h)
         return h, h, y
 
@@ -188,7 +188,7 @@ class SimpleCNN_for_MOON(nn.Module):
             nn.MaxPool2d(kernel_size=(2, 2), stride=(2, 2)),
         )
         self.l1 = nn.Linear(512, 512)
-        self.relu = nn.ReLU(inplace=True)
+
         self.l2 = nn.Linear(512, out_num)
 
     def forward(self, x):
@@ -198,9 +198,8 @@ class SimpleCNN_for_MOON(nn.Module):
         h = self.block_4(h)
         h = self.block_5(h)
         h = self.block_6(h)
-        h = h.view(h.shape[0], -1)
+        h = h.squeeze()
         x = self.l1(h)
-        x = self.relu(x)
         y = self.l2(x)
         return h, x, y
 
