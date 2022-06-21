@@ -263,6 +263,7 @@ if __name__ == "__main__":
     hash_name = datetime.datetime.now().strftime("%Y-%m-%d-%H%M-%S")
     savedir = os.path.join(args.savedir, hash_name)
     init_logger(savedir, hash_name)
+    logging.info(args)
     train(
         network=args.backbone, datadir=args.datadir, dataset=args.dataset, 
         algorithm=args.alg, partition=args.partition, n_parties=args.n_parties, alpha=args.alpha, savedir=savedir, args=args

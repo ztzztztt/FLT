@@ -107,6 +107,9 @@ class FedProx(object):
                 epoch_fedprox_lst.append(fed_prox_reg.item())
                 epoch_loss_lst.append(total_loss.item())
             
+            epoch_optim_lst = [0] if len(epoch_optim_lst) == 0 else epoch_optim_lst
+            epoch_fedprox_lst = [0] if len(epoch_fedprox_lst) == 0 else epoch_fedprox_lst
+            epoch_loss_lst = [0] if len(epoch_loss_lst) == 0 else epoch_loss_lst
             logging.info(
                 f"    >>> [Local Train] Epoch: {epoch + 1}, "
                 f"Optim Loss: {(sum(epoch_optim_lst) / len(epoch_optim_lst)):.6f}, "

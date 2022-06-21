@@ -89,7 +89,7 @@ class FedAvg(object):
                 loss.backward()
                 optimizer.step()
                 epoch_loss_lst.append(loss.item())
-            
+            epoch_loss_lst = [0.0] if len(epoch_loss_lst) == 0 else epoch_loss_lst
 
             with torch.no_grad():
                 net.eval()
