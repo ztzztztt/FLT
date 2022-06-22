@@ -22,7 +22,7 @@ def ConvBN(in_channel, out_channel, kernel, stride, padding=0):
 
 
 class SimpleCNN(nn.Module):
-    def __init__(self, out_num: int = 10):
+    def __init__(self, num_classes: int = 10):
         super().__init__()
         self.block_1 = ConvBN(3, 16, 3, 1, 1)
 
@@ -56,7 +56,7 @@ class SimpleCNN(nn.Module):
         self.fc = nn.Sequential(
             nn.Linear(512, 512),
             nn.ReLU(inplace=True),
-            nn.Linear(512, out_num)
+            nn.Linear(512, num_classes)
         )
 
     def forward(self, x):

@@ -25,22 +25,22 @@ from flt.dataset import Cifar10Wrapper, Cifar100Wrapper, ImageFolderWrapper
 
 def get_args():
     parser = ArgumentParser()
-    parser.add_argument("-b", "--backbone", default="resnet9", type=str, choices=["SimpleCNN", "resnet34", "shufflenet"], 
+    parser.add_argument("-b", "--backbone", default="SimpleCNN", type=str, choices=["SimpleCNN", "resnet34", "shufflenet"], 
                          help="the network/model for experiment")
     parser.add_argument("--net_config", default={}, type=lambda x: list(map(int, x.split(', '))), help="the federated learning network config")
 
     parser.add_argument("-d", "--dataset", default="cifar10", type=str, choices=["cifar10", "cifar100", "mnist"],
                          help="the dataset for training Federated Learning")
-    parser.add_argument("--alpha", default=0.5, type=float, help="the dirichlet ratio for dataset split to train Federated Learning")
+    parser.add_argument("--alpha", default=0.05, type=float, help="the dirichlet ratio for dataset split to train Federated Learning")
     parser.add_argument("--datadir", default="./data/cifar10", type=str, help="the dataset dir")
-    parser.add_argument('--partition', default="iid", type=str, choices=["iid", "non-iid"], help="the data partitioning strategy")
+    parser.add_argument('--partition', default="non-iid", type=str, choices=["iid", "non-iid"], help="the data partitioning strategy")
 
-    parser.add_argument("-lr", "--learning_rate", default=0.1, type=float, help="the optimizer learning rate")
+    parser.add_argument("-lr", "--learning_rate", default=0.001, type=float, help="the optimizer learning rate")
     parser.add_argument("-bs", "--batch_size", default=16, type=int, help="the batch size for client local epoch training in federated learning")
     parser.add_argument("-wd", "--weight_decay", default=1e-5, type=float, help="the weight decay for optimizer in federated learning")
     parser.add_argument("-optim", "--optim_name", default="sgd", type=str, choices=["sgd", "adam", "amsgrad"],
                          help="the optimizer for client local epoch training in federated learning")
-    parser.add_argument("-mu", "--mu", default=0.01, type=float, help="the mu for fedprox in federated learning")
+    parser.add_argument("-mu", "--mu", default=1.0, type=float, help="the mu for fedprox in federated learning")
     parser.add_argument("-n", "--n_parties", default=10, type=int, help="total client numbers in federated learning")
     parser.add_argument("-nk", "--nk_parties", default=10, type=int, help="client numbers for aggregation per communication round in federated learning")
 
@@ -230,14 +230,20 @@ def train(network: str, datadir: str, dataset: str, algorithm: str, partition: s
         n_classes = 100
     else:
         n_classes = 10
+    # 如果是MOON算法，则由于输出多个值，需要加载不同的模型
+    if algorithm == "moon":
+        net_config = {"model_name": f"{network}", "num_classes": n_classes}
+        network = "ModelFedCon"
+    else:
+        net_config = {"num_classes": n_classes}
     # 获取模型
     logging.info(f"Load network: {network}")
-    global_nets = init_nets(network, 1, {"num_classes": n_classes})
+    global_nets = init_nets(network, 1, net_config)
     if global_nets is None or global_nets.get(0) is None:
         logging.info("Error, initialize global model failed")
         return 
     global_net = global_nets[0]
-    nets = init_nets(network, n_parties, {"num_classes": n_classes})
+    nets = init_nets(network, n_parties, net_config)
     # 获取训练数据集与测试数据集
     train_datasets, test_dataset = init_datasets(datadir, dataset, partition=partition, n_parties=n_parties, alpha=alpha)
     if nets is None or train_datasets is None or test_dataset is None:
@@ -261,6 +267,7 @@ if __name__ == "__main__":
     hash_name = datetime.datetime.now().strftime("%Y-%m-%d-%H%M-%S")
     savedir = os.path.join(args.savedir, hash_name)
     init_logger(savedir, hash_name)
+    logging.info(args)
     train(
         network=args.backbone, datadir=args.datadir, dataset=args.dataset, 
         algorithm=args.alg, partition=args.partition, n_parties=args.n_parties, alpha=args.alpha, savedir=savedir, args=args

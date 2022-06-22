@@ -54,9 +54,48 @@ class IIDPartitioner(Partitioner):
                     raise RuntimeError("Client Id is not consistent with slice number !!!")
                 slices[i].extend(sample_idxs[start: (start + step)])
         return slices
-    
+
 
 class DirichletPartitioner(Partitioner):
+    def __init__(self, dataset, num: int, alpha: float = 0.5, min_require_size: int = 10) -> None:
+        super().__init__(dataset, num)
+        self._alpha = alpha
+        self._min_require_size = min_require_size
+
+    def partition(self):
+        """
+        数据切分
+        :raises RuntimeError: 节点数量与实际生成的切片数量不一致抛出异常
+        :return dict[int, list[int]]: 每个客户端切分后的数据样本下标
+        """
+        min_size = 0
+        targets = self._dataset.targets
+        # 获取当前的label，以及每个label的样本数量
+        label, _ = self.count_target()
+        # 类别的数量
+        K = len(label)
+        N = targets.shape[0]
+        slices = {k: [] for k in range(self._num)}
+        idx_batch = [[] for _ in range(self._num)]
+        while min_size < self._min_require_size:
+            idx_batch = [[] for _ in range(self._num)]
+            for k in range(K):
+                idx_k = np.where(targets == k)[0]
+                np.random.shuffle(idx_k)
+                props = np.random.dirichlet(np.repeat(self._alpha, self._num))
+                props = np.array([p * (len(idx_j) < N / self._num) for p, idx_j in zip(props, idx_batch)])
+                props = props / props.sum()
+                props = (np.cumsum(props) * len(idx_k)).astype(int)[:-1]
+                idx_batch = [idx_j + idx.tolist() for idx_j, idx in zip(idx_batch, np.split(idx_k, props))]
+                min_size = min([len(idx_j) for idx_j in idx_batch])
+
+        for j in range(self._num):
+            np.random.shuffle(idx_batch[j])
+            slices[j] = idx_batch[j]
+        return slices
+
+
+class DeprecatedDirichletPartitioner(Partitioner):
     def __init__(self, dataset, num: int, alpha: float = 0.5) -> None:
         super().__init__(dataset, num)
         self._alpha = alpha
@@ -131,8 +170,8 @@ if __name__ == "__main__":
         train=True,
         download=False,
     )
-    partitioner = IIDPartitioner(dataset, 9)
-    # partitioner = DirichletPartitioner(dataset, 9, alpha=0.1)
+    # partitioner = IIDPartitioner(dataset, 9)
+    partitioner = DirichletPartitioner(dataset, 10, alpha=0.05)
     samples = partitioner.partition()
     sample_dict = {k:len(v) for k, v in samples.items()}
     print(sample_dict)

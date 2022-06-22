@@ -10,6 +10,7 @@
 @Desc    : FedAVG 联邦平均算法
 """
 import os
+import copy
 import torch
 import logging
 import operator
@@ -88,7 +89,7 @@ class FedAvg(object):
                 loss.backward()
                 optimizer.step()
                 epoch_loss_lst.append(loss.item())
-            
+            epoch_loss_lst = [0.0] if len(epoch_loss_lst) == 0 else epoch_loss_lst
 
             with torch.no_grad():
                 net.eval()
@@ -104,7 +105,7 @@ class FedAvg(object):
 
     def _aggregate(self, net_w_lst: list, ratios: list):
         sample_num = sum(ratios)
-        global_w = net_w_lst[0]
+        global_w = copy.deepcopy(net_w_lst[0])
         for key in global_w.keys():
             if "num_batches_tracked" not in key:
                 global_w[key] *= (ratios[0] / sample_num)
@@ -152,8 +153,8 @@ class FedAvg(object):
             return samples
 
     def start(self):
-        global_w = self._global_net.state_dict()
         for round in range(self._comm_round):
+            global_w = self._global_net.state_dict()
             logging.info(f"[Round] {round + 1} / {self._comm_round} start")
             # 选择部分或者全部节点进行训练
             samples = self._sample_nets(self._nets, self._nk_parties)
