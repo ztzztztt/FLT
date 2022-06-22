@@ -239,15 +239,15 @@ class ModelFedCon(nn.Module):
         elif model_name == "shufflenet":
             basemodel = moon_shufflenet(num_classes=num_classes)
             self.features = nn.Sequential(*list(basemodel.children())[:-1])
-            num_ftrs = 512
+            num_ftrs = 288
         elif model_name == "SimpleCNN":
-            basemodel = moon_shufflenet(num_classes=num_classes)
+            basemodel = moon_SimpleCNN(num_classes=num_classes)
             self.features = nn.Sequential(*list(basemodel.children())[:-1])
-            num_ftrs = 84
+            num_ftrs = 512
         else:
-            basemodel = moon_shufflenet(num_classes=num_classes)
+            basemodel = moon_SimpleCNN(num_classes=num_classes)
             self.features = nn.Sequential(*list(basemodel.children())[:-1])
-            num_ftrs = 84
+            num_ftrs = 512
 
         self.l1 = nn.Linear(num_ftrs, num_ftrs)
 
