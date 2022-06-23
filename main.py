@@ -17,8 +17,7 @@ import datetime
 from flt import network
 from torchvision import transforms
 from argparse import ArgumentParser
-from flt.algorithms import FedAvg, FedProx
-from flt.algorithms.moon import MOON
+from flt.algorithms import FedAvg, FedProx, MOON
 from flt.utils.partitioner import IIDPartitioner, DirichletPartitioner
 from flt.dataset import Cifar10Wrapper, Cifar100Wrapper, ImageFolderWrapper
 

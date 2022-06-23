@@ -11,3 +11,4 @@
 """
 from .fedavg import FedAvg
 from .fedprox import FedProx
+from .moon import MOON
